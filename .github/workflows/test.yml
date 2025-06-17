@@ -20,6 +20,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build @iocium/rdap-lite
+        run: |
+          npm run build
+
       - name: Run tests
         run: npm run test:coverage
 
