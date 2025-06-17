@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
+    "pretest": "npm run build",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",

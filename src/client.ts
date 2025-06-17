@@ -17,31 +17,49 @@ const defaultHeaders = {
 /**
  * Discover RDAP base URL for a domain or IP using IANA bootstrap.
  */
+// Cache compiled bootstrap services (patterns or CIDR matchers) per cache instance
+const compiledBootstraps: WeakMap<RDAPCache, Record<string, Array<{ patterns?: string[]; cidrs?: IPCIDR[]; url: string }>>> = new WeakMap();
 export async function getRDAPBase(input: string, type: 'domain' | 'ip', opts: RDAPOptions): Promise<string | undefined> {
   const cache = opts.cache || memoryCache;
-  const key = `rdap-bootstrap-${type}`;
-  let data = await cache.get(key);
-
+  // Use unified cache key for domain or IP bootstrap
+  const cacheKey = `rdap-bootstrap-${type}`;
+  let data: any = await cache.get(cacheKey);
   if (!data) {
-    const url = type === 'domain' ? IANA_BOOTSTRAP.domain : getIPVersion(input) === 4 ? IANA_BOOTSTRAP.ipv4 : IANA_BOOTSTRAP.ipv6;
+    const url = type === 'domain'
+      ? IANA_BOOTSTRAP.domain
+      : getIPVersion(input) === 4
+        ? IANA_BOOTSTRAP.ipv4
+        : IANA_BOOTSTRAP.ipv6;
     const res = await fetchWithTimeout(url, { headers: opts.headers ?? defaultHeaders }, opts.timeout);
     if (!res.ok) throw new Error(`Failed to fetch IANA bootstrap: ${res.status}`);
     data = await res.json();
-    await cache.set(key, data, 86400);
+    await cache.set(cacheKey, data, 86400);
   }
-
-  const services: any[] = data.services || [];
-  for (const [patterns, urls] of services) {
-    if (type === 'domain') {
-      if (patterns.some((p: string) => input === p || input.endsWith(p))) {
-        return urls[0];
+  // Compile service entries once per cache instance and bootstrap key
+  let compiledMap = compiledBootstraps.get(cache) || {};
+  let compiled = compiledMap[cacheKey];
+  if (!compiled) {
+    compiled = (data.services || []).map(([patterns, urls]: any[]) => {
+      const url = urls[0] as string;
+      if (type === 'domain') {
+        return { patterns: patterns as string[], url };
+      } else {
+        return { cidrs: (patterns as string[]).map(cidr => new IPCIDR(cidr)), url };
       }
-    } else {
-      // For IP lookups, patterns represent CIDR ranges; use ip-cidr to detect membership
-      for (const cidr of patterns) {
-        const cidrMatcher = new IPCIDR(cidr);
-        if (cidrMatcher.contains(input)) {
-          return urls[0];
+    });
+    compiledMap[cacheKey] = compiled;
+    compiledBootstraps.set(cache, compiledMap);
+  }
+  // Match input against compiled services
+  for (const entry of compiled) {
+    if (type === 'domain' && entry.patterns) {
+      if (entry.patterns.some(p => input === p || input.endsWith(p))) {
+        return entry.url;
+      }
+    } else if (entry.cidrs) {
+      for (const matcher of entry.cidrs) {
+        if (matcher.contains(input)) {
+          return entry.url;
         }
       }
     }
@@ -98,6 +116,16 @@ export async function queryRDAP(input: string, opts: RDAPOptions = {}): Promise<
   if (!res!.ok) throw new Error(`RDAP query failed: ${res!.status}`);
   const raw = await res!.json();
 
+  // Extract registration and last-changed dates in a single pass
+  let created: string | undefined;
+  let updated: string | undefined;
+  if (Array.isArray(raw.events)) {
+    for (const ev of raw.events) {
+      if (ev.eventAction === 'registration') created = ev.eventDate;
+      else if (ev.eventAction === 'last changed') updated = ev.eventDate;
+      if (created && updated) break;
+    }
+  }
   const result: RDAPResult = {
     type,
     handle: raw.handle,
@@ -106,8 +134,8 @@ export async function queryRDAP(input: string, opts: RDAPOptions = {}): Promise<
     org: raw?.entities?.[0]?.fn || raw?.entities?.[0]?.vcardArray?.[1]?.find((v: any[]) => v[0] === 'fn')?.[3],
     country: raw.country,
     networkRange: raw.startAddress && raw.endAddress ? `${raw.startAddress} - ${raw.endAddress}` : undefined,
-    created: raw.events?.find((e: any) => e.eventAction === 'registration')?.eventDate,
-    updated: raw.events?.find((e: any) => e.eventAction === 'last changed')?.eventDate,
+    created,
+    updated,
     entities: raw.entities?.map(extractEntity),
     raw
   };

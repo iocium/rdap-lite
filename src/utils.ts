@@ -48,7 +48,9 @@ export async function fetchWithTimeout(
   timeoutMs = 10000
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  // Use immediate abort for very small timeouts to ensure timely rejection
+  const delay = timeoutMs <= 1 ? 0 : timeoutMs;
+  const timeoutId = setTimeout(() => controller.abort(), delay);
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     return res;
@@ -58,6 +60,6 @@ export async function fetchWithTimeout(
     }
     throw err;
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
   }
 }
