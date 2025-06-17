@@ -1,75 +1,87 @@
 # @iocium/rdap-lite
 
-Lightweight RDAP client with normalized output, caching, CLI, and browser compatibility.
+[![npm version](https://img.shields.io/npm/v/@iocium/rdap-lite.svg)](https://www.npmjs.com/package/@iocium/rdap-lite) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Features
+> **Lightweight RDAP client** for domain and IP lookups with normalized JSON output, built-in caching, and a user-friendly CLI. Works seamlessly in Node.js, browsers, and serverless environments.
 
-- Normalize RDAP responses for domains and IP addresses
-- Automatic IANA bootstrap discovery
-- Built‑in retries with exponential backoff on rate limits
-- Configurable headers, proxy, timeout, and caching
-- In‑memory cache by default, pluggable cache interface
-- Programmatic API and simple CLI
+> 🚀 *Blazingly fast lookups powered by automatic IANA bootstrap discovery and retry logic.*
 
-## Installation
+> 🔗 *Explore full API docs* at: https://iocium.github.io/rdap-lite
 
-Install from npm:
+## 📌 Features
+
+- 🔍 **Normalized Results**: Consistent JSON shape for domain & IP RDAP responses
+- 🌐 **IANA Bootstrap**: Automatic discovery of RDAP endpoints (no manual URLs)
+- ⏱️ **Retries & Backoff**: Automatic retry on HTTP 429 with exponential backoff
+- ⚙️ **Flexible Configuration**: Custom headers, proxy support, timeouts, and cache
+- 💾 **Pluggable Caching**: Default in-memory cache or custom implementations
+- 🛠 **Dual Interface**: Promise-based API and standalone CLI
+
+## 📦 Installation
 
 ```bash
 npm install @iocium/rdap-lite
-```
-
-Or with yarn:
-
-```bash
+# or
 yarn add @iocium/rdap-lite
 ```
 
-## Usage
+## ⚡️ CLI Usage
 
-### Programmatic API
+```bash
+# Simple lookup
+npx rdap-lite example.com
 
-Import and invoke the main lookup function:
+# JSON output
+npx rdap-lite 8.8.8.8 --json
+```
 
-```ts
+For more options:
+```bash
+rdap-lite --help
+```
+
+## 💻 Programmatic API
+
+```js
 import { queryRDAP } from '@iocium/rdap-lite';
 
 (async () => {
-  const info = await queryRDAP('example.com', {
-    timeout: 5000,
-    headers: { 'User-Agent': 'my-app/1.0' },
-  });
-  console.log(info);
+  try {
+    const info = await queryRDAP('example.com', {
+      timeout: 5000,
+      headers: { 'User-Agent': 'my-app/1.0' },
+      proxy: 'https://myproxy.local/',
+    });
+    console.log(info);
+  } catch (err) {
+    console.error('Error:', err);
+  }
 })();
 ```
 
-The `queryRDAP` function accepts an input string (domain or IP) and an optional options object:
+### Configuration Options
 
-- `headers?: Record<string, string>` — custom HTTP headers for bootstrap and RDAP requests
-- `proxy?: string` — base URL to proxy requests (e.g., for CORS)
-- `timeout?: number` — request timeout in milliseconds
-- `cache?: RDAPCache` — custom cache implementation (defaults to in‑memory cache)
+| Option     | Type                      | Default      | Description                               |
+|------------|---------------------------|--------------|-------------------------------------------|
+| `headers`  | `Record<string,string>`   | `{…}`        | Custom HTTP headers                       |
+| `proxy`    | `string`                  | `undefined`  | Proxy prefix URL for routing requests     |
+| `timeout`  | `number`                  | `10000`      | Request timeout in milliseconds           |
+| `cache`    | `RDAPCache`               | In-memory    | Custom cache implementing `.get()` / `.set()` |
 
-The result is an object containing parsed RDAP data (type, handle, names, events, entities, raw JSON, etc.).
+> The default in-memory cache retains results for 1 hour.
 
-### CLI
+## 🌍 Environment Compatibility
 
-Once installed, the CLI wrapper is available as `rdap-lite`:
+- **Node.js** (v14+)
+- **Browsers** (bundlers supporting Fetch & AbortController)
+- **Cloudflare Workers** & other serverless platforms
 
-```bash
-npx rdap-lite example.com
-```
+## 📚 Documentation
 
-Run `rdap-lite --help` to see all available options.
+Explore the full API reference generated via TypeDoc:
 
-## Documentation
+[▶️ View Documentation](https://iocium.github.io/rdap-lite)
 
-Full API reference is generated with TypeDoc in the `docs/` directory:
-
-```bash
-npm run docs
-```
-
-## License
+## 📄 License
 
 MIT
