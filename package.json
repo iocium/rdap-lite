@@ -29,14 +29,14 @@
   "author": "iocium",
   "license": "MIT",
   "dependencies": {
-    "validator": "^13.11.0",
-    "ip-cidr": "^2.0.0",
-    "commander": "^10.0.0"
+    "commander": "^14.0.0",
+    "ip-cidr": "^4.0.2",
+    "validator": "^13.11.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.2",
-    "@types/node": "^24.0.1",
-    "@types/validator": "^13.15.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.3",
+    "@types/validator": "^13.15.2",
     "jest": "^30.0.0",
     "ts-jest": "^29.1.1",
     "tsup": "^8.5.0",
