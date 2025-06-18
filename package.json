@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Lightweight RDAP client with normalized output, caching, CLI, and browser compatibility.",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "bin": {
     "rdap-lite": "dist/cli.js"
@@ -28,6 +29,9 @@
   ],
   "author": "iocium",
   "license": "MIT",
+  "browser": "dist/browser/index.global.js",
+  "unpkg": "dist/browser/index.global.js",
+  "jsdelivr": "dist/browser/index.global.js",
   "dependencies": {
     "commander": "^14.0.0",
     "ipaddr.js": "^2.0.0",

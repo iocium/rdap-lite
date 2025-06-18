@@ -76,6 +76,17 @@ import { queryRDAP } from '@iocium/rdap-lite';
 - **Browsers** (bundlers supporting Fetch & AbortController)
 - **Cloudflare Workers** & other serverless platforms
 
+## 🖥️ Browser Build
+
+We provide a standalone IIFE bundle for direct use in browsers (no bundler required):
+
+```html
+<script src="dist/browser/index.global.js"></script>
+<script>
+  rdapLite.queryRDAP('example.com').then(console.log);
+</script>
+```
+
 ## 📚 Documentation
 
 Explore the full API reference generated via TypeDoc:
