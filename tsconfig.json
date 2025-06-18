@@ -12,7 +12,10 @@
     "types": [
       "node",
       "jest"
-    ]
+    ],
+    // enable importing JSON modules for static bootstrap data
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src",

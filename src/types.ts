@@ -38,6 +38,11 @@ export interface RDAPOptions {
   timeout?: number;
   /** Optional cache interface implementation */
   cache?: RDAPCache;
+  /**
+   * If true, use build-time embedded IANA bootstrap data
+   * (requires running the update-bootstraps tool before build).
+   */
+  staticBootstrap?: boolean;
 }
 
 /**

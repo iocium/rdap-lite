@@ -2,6 +2,9 @@
 
 import { Command } from 'commander';
 import { queryRDAP } from './client';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as https from 'https';
 
 const program = new Command();
 
@@ -36,6 +39,59 @@ program
       console.error('❌ Error:', err.message);
       process.exit(1);
     }
+  });
+
+// Command to update embedded IANA bootstrap JSON files
+program
+  .command('update-bootstraps [type]')
+  .description('Fetch IANA bootstrap JSON (domain, ipv4, ipv6, or all) and save to src/data')
+  .action(async (type: string = 'all') => {
+    const map: Record<string, { url: string; file: string }> = {
+      domain: { url: 'https://data.iana.org/rdap/dns.json', file: 'dns.json' },
+      ipv4:   { url: 'https://data.iana.org/rdap/ipv4.json', file: 'ipv4.json' },
+      ipv6:   { url: 'https://data.iana.org/rdap/ipv6.json', file: 'ipv6.json' },
+    };
+    const types = type === 'all' ? Object.keys(map) : [type];
+    for (const key of types) {
+      if (!map[key]) {
+        console.error(`Unknown type: ${key}. Valid: domain, ipv4, ipv6, all.`);
+        process.exit(1);
+      }
+      const { url, file } = map[key];
+      const outPath = path.resolve(__dirname, 'data', file);
+      try {
+        // Fetch raw JSON text
+        const text = await new Promise<string>((resolve, reject) => {
+          https.get(url, (res) => {
+            if (res.statusCode !== 200) {
+              reject(new Error(`HTTP ${res.statusCode}`));
+              return;
+            }
+            let data = '';
+            res.setEncoding('utf8');
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+          }).on('error', reject);
+        });
+        // Minify JSON by stripping whitespace
+        let minified: string;
+        try {
+          const obj = JSON.parse(text);
+          minified = JSON.stringify(obj);
+        } catch (err: any) {
+          console.warn(`Warning: failed to parse JSON for ${file}, writing raw text`);
+          minified = text;
+        }
+        // Ensure output directory exists
+        await fs.mkdir(path.dirname(outPath), { recursive: true });
+        await fs.writeFile(outPath, minified, 'utf8');
+        console.log(`Updated src/data/${file} (${Buffer.byteLength(minified, 'utf8')} bytes)`);
+      } catch (err: any) {
+        console.error(`Failed to update ${key}:`, err.message);
+        process.exit(1);
+      }
+    }
+    process.exit(0);
   });
 
 // Show help when no arguments are provided

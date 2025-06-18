@@ -3,6 +3,10 @@ import { RDAPOptions, RDAPResult, RDAPEntity, RDAPCache } from './types';
 import { isValidDomain, isValidIP, getIPVersion, applyProxy, fetchWithTimeout } from './utils';
 import * as ipaddr from 'ipaddr.js';
 import { memoryCache } from './cache';
+// Build-time embedded IANA bootstrap data (run `update-bootstraps` to refresh):
+import dnsBootstrap from './data/dns.json';
+import ipv4Bootstrap from './data/ipv4.json';
+import ipv6Bootstrap from './data/ipv6.json';
 
 const IANA_BOOTSTRAP = {
   domain: 'https://data.iana.org/rdap/dns.json',
@@ -28,19 +32,30 @@ type BootstrapEntry = {
 const compiledBootstraps: WeakMap<RDAPCache, Record<string, BootstrapEntry[]>> = new WeakMap();
 export async function getRDAPBase(input: string, type: 'domain' | 'ip', opts: RDAPOptions): Promise<string | undefined> {
   const cache = opts.cache || memoryCache;
-  // Use unified cache key for domain or IP bootstrap
   const cacheKey = `rdap-bootstrap-${type}`;
-  let data: any = await cache.get(cacheKey);
-  if (!data) {
-    const url = type === 'domain'
-      ? IANA_BOOTSTRAP.domain
+  const useStatic = opts.staticBootstrap === true;
+  // Load bootstrap data: embedded JSON or cached network fetch
+  let data: any;
+  if (useStatic) {
+    data = type === 'domain'
+      ? dnsBootstrap
       : getIPVersion(input) === 4
-        ? IANA_BOOTSTRAP.ipv4
-        : IANA_BOOTSTRAP.ipv6;
-    const res = await fetchWithTimeout(url, { headers: opts.headers ?? defaultHeaders }, opts.timeout);
-    if (!res.ok) throw new Error(`Failed to fetch IANA bootstrap: ${res.status}`);
-    data = await res.json();
-    await cache.set(cacheKey, data, 86400);
+        ? ipv4Bootstrap
+        : ipv6Bootstrap;
+  } else {
+    // Cached network fetch path
+    data = await cache.get(cacheKey);
+    if (!data) {
+      const url = type === 'domain'
+        ? IANA_BOOTSTRAP.domain
+        : getIPVersion(input) === 4
+          ? IANA_BOOTSTRAP.ipv4
+          : IANA_BOOTSTRAP.ipv6;
+      const res = await fetchWithTimeout(url, { headers: opts.headers ?? defaultHeaders }, opts.timeout);
+      if (!res.ok) throw new Error(`Failed to fetch IANA bootstrap: ${res.status}`);
+      data = await res.json();
+      await cache.set(cacheKey, data, 86400);
+    }
   }
   // Compile service entries once per cache instance and bootstrap key
   const compiledMap = compiledBootstraps.get(cache) || {};
