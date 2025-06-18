@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 import { RDAPOptions, RDAPResult, RDAPEntity, RDAPCache } from './types';
 import { isValidDomain, isValidIP, getIPVersion, applyProxy, fetchWithTimeout } from './utils';
-import IPCIDR from 'ip-cidr';
+import * as ipaddr from 'ipaddr.js';
 import { memoryCache } from './cache';
 
 const IANA_BOOTSTRAP = {
@@ -17,8 +17,8 @@ const defaultHeaders = {
 /**
  * Discover RDAP base URL for a domain or IP using IANA bootstrap.
  */
-// Cache compiled bootstrap services (patterns or CIDR matchers) per cache instance
-const compiledBootstraps: WeakMap<RDAPCache, Record<string, Array<{ patterns?: string[]; cidrs?: IPCIDR[]; url: string }>>> = new WeakMap();
+// Cache compiled bootstrap services (patterns) per cache instance
+const compiledBootstraps: WeakMap<RDAPCache, Record<string, Array<{ patterns: string[]; url: string }>>> = new WeakMap();
 export async function getRDAPBase(input: string, type: 'domain' | 'ip', opts: RDAPOptions): Promise<string | undefined> {
   const cache = opts.cache || memoryCache;
   // Use unified cache key for domain or IP bootstrap
@@ -36,30 +36,32 @@ export async function getRDAPBase(input: string, type: 'domain' | 'ip', opts: RD
     await cache.set(cacheKey, data, 86400);
   }
   // Compile service entries once per cache instance and bootstrap key
-  let compiledMap = compiledBootstraps.get(cache) || {};
+  const compiledMap = compiledBootstraps.get(cache) || {};
   let compiled = compiledMap[cacheKey];
   if (!compiled) {
-    compiled = (data.services || []).map(([patterns, urls]: any[]) => {
-      const url = urls[0] as string;
-      if (type === 'domain') {
-        return { patterns: patterns as string[], url };
-      } else {
-        return { cidrs: (patterns as string[]).map(cidr => new IPCIDR(cidr)), url };
-      }
-    });
+    compiled = (data.services || []).map(([patterns, urls]: any[]) => ({
+      patterns: patterns as string[],
+      url: urls[0] as string,
+    }));
     compiledMap[cacheKey] = compiled;
     compiledBootstraps.set(cache, compiledMap);
   }
   // Match input against compiled services
   for (const entry of compiled) {
-    if (type === 'domain' && entry.patterns) {
+    if (type === 'domain') {
       if (entry.patterns.some(p => input === p || input.endsWith(p))) {
         return entry.url;
       }
-    } else if (entry.cidrs) {
-      for (const matcher of entry.cidrs) {
-        if (matcher.contains(input)) {
-          return entry.url;
+    } else {
+      for (const cidr of entry.patterns) {
+        try {
+          const [range, bits] = ipaddr.parseCIDR(cidr);
+          const addr = ipaddr.parse(input);
+          if (addr.kind() === range.kind() && addr.match(range, bits)) {
+            return entry.url;
+          }
+        } catch {
+          // ignore invalid CIDR patterns
         }
       }
     }
