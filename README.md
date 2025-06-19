@@ -70,6 +70,24 @@ import { queryRDAP } from '@iocium/rdap-lite';
 
 > The default in-memory cache retains results for 1 hour.
 
+### Cache Backends
+
+You can use the default in-memory cache via the `cache` option (using `memoryCache`), or Workers KV and D1 backends with the built-in helpers:
+
+```js
+import { queryRDAP, kvCache, d1Cache } from '@iocium/rdap-lite';
+
+// Use KV namespace as cache
+const result = await queryRDAP('example.com', {
+  cache: kvCache(env.MY_KV_NAMESPACE),
+});
+
+// Use D1 database as cache
+const result2 = await queryRDAP('example.com', {
+  cache: d1Cache(env.DB),
+});
+```
+
 ## 🌍 Environment Compatibility
 
 - **Node.js** (v14+)
