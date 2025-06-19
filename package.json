@@ -36,7 +36,8 @@
   "dependencies": {
     "commander": "^14.0.0",
     "ipaddr.js": "^2.0.0",
-    "validator": "^13.11.0"
+    "validator": "^13.11.0",
+    "@iocium/cachekit": "^1.1.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
