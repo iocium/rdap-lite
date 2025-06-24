@@ -41,9 +41,9 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.3",
+    "@types/node": "^24.0.4",
     "@types/validator": "^13.15.2",
-    "jest": "^30.0.0",
+    "jest": "^30.0.2",
     "ts-jest": "^29.1.1",
     "tsup": "^8.5.0",
     "typedoc": "^0.28.5",
