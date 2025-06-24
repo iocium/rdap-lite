@@ -129,6 +129,31 @@ describe('getRDAPBase', () => {
     expect(base2).toBe('https://rdap.foobar/');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  test('fetches bootstrap for autnum and returns matching URL from ranges', async () => {
+    const dummyData = {
+      services: [[['1-2', 'invalid'], ['https://rdap-range/']]],
+    };
+    jest.spyOn(utils, 'fetchWithTimeout').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => dummyData,
+    } as any);
+    const dummyCache = {
+      get: jest.fn().mockResolvedValue(undefined),
+      set: jest.fn().mockResolvedValue(undefined),
+    };
+    const base1 = await getRDAPBase('1', 'autnum', { cache: dummyCache });
+    expect(base1).toBe('https://rdap-range/');
+    expect(dummyCache.set).toHaveBeenCalledWith('rdap-bootstrap-autnum', dummyData, 86400);
+    const base2 = await getRDAPBase('2', 'autnum', { cache: dummyCache });
+    expect(base2).toBe('https://rdap-range/');
+  });
+  
+  test('uses static bootstrap data when staticBootstrap is true', async () => {
+    const dummyCache = {} as any;
+    const base = await getRDAPBase('example.com', 'domain', { staticBootstrap: true, cache: dummyCache });
+    expect(base).toBeUndefined();
+  });
 });
 
 describe('queryRDAP', () => {
@@ -138,7 +163,7 @@ describe('queryRDAP', () => {
 
   test('throws on invalid input', async () => {
     await expect(queryRDAP('notvalid')).rejects.toThrow(
-      'Input must be a valid domain or IP address'
+      'Input must be a valid domain, IP address, or ASN'
     );
   });
 
@@ -299,3 +324,53 @@ describe('queryRDAP', () => {
     expect(result.entities).toHaveLength(1);
     expect(result.entities![0].name).toBe('fnX');
   });
+
+// Tests for static bootstrap and ASN queries
+describe('getRDAPBase staticBootstrap', () => {
+  test('uses static bootstrap data when staticBootstrap is true for domain', async () => {
+    const dummyCache = {} as any;
+    const base = await getRDAPBase('example.com', 'domain', { staticBootstrap: true, cache: dummyCache });
+    expect(base).toBeUndefined();
+  });
+  test('uses static bootstrap data when staticBootstrap is true for IP', async () => {
+    const dummyCache = {} as any;
+    const base = await getRDAPBase('1.2.3.4', 'ip', { staticBootstrap: true, cache: dummyCache });
+    expect(base).toBeUndefined();
+  });
+  test('uses static bootstrap data when staticBootstrap is true for autnum', async () => {
+    const dummyCache = {} as any;
+    const base = await getRDAPBase('123', 'autnum', { staticBootstrap: true, cache: dummyCache });
+    expect(base).toBeUndefined();
+  });
+});
+
+describe('queryRDAP autnum', () => {
+  test('performs RDAP ASN (autnum) query and caches result', async () => {
+    const rawData = {
+      handle: 'h', name: 'n', port43: 'p', country: 'c',
+      startAutnum: 100, endAutnum: 200, events: [], entities: [],
+    };
+    const dummyCache = { get: jest.fn().mockResolvedValue(undefined), set: jest.fn() };
+    const fetchSpy = jest.spyOn(utils, 'fetchWithTimeout').mockImplementation(async (url: string) => {
+      if (url.includes('data.iana.org/rdap')) {
+        return {
+          ok: true, status: 200,
+          json: async () => ({ services: [[['0/0'], ['https://rdap.autnum/']]] }),
+        } as any;
+      }
+      return { ok: true, status: 200, json: async () => rawData } as any;
+    });
+    const originalSetTimeout = global.setTimeout;
+    (global as any).setTimeout = (fn: any) => { fn(); return 0 as any; };
+    const result = await queryRDAP('AS123', { cache: dummyCache });
+    (global as any).setTimeout = originalSetTimeout;
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/autnum/123'),
+      expect.anything(),
+      expect.any(Number),
+    );
+    expect(result.type).toBe('autnum');
+    expect(result.networkRange).toBe('100 - 200');
+    expect(dummyCache.set).toHaveBeenCalledWith('rdap-result-123', result, 3600);
+  });
+});

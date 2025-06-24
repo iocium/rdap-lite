@@ -13,7 +13,8 @@ export interface RDAPEntity {
  * The final normalized result returned by RDAP lookups.
  */
 export interface RDAPResult {
-  type: 'domain' | 'ip';
+  /** Type of RDAP resource: domain name, IP address, or ASN (autnum) */
+  type: 'domain' | 'ip' | 'autnum';
   handle?: string;
   name?: string;
   registrar?: string;

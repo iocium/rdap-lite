@@ -1,4 +1,4 @@
-import { memoryCache } from '../src/cache';
+import { memoryCache, kvCache, d1Cache } from '../src/cache';
 
 describe('memoryCache', () => {
   test('returns undefined for missing key', async () => {
@@ -22,5 +22,23 @@ describe('memoryCache', () => {
     await memoryCache.set(key, 'value');
     const value = await memoryCache.get(key);
     expect(value).toBe('value');
+  });
+});
+// Tests for kvCache and d1Cache constructors
+describe('kvCache', () => {
+  test('returns an object with get and set', () => {
+    const fakeNamespace = {} as any;
+    const cache = kvCache(fakeNamespace);
+    expect(cache).toHaveProperty('get');
+    expect(cache).toHaveProperty('set');
+  });
+});
+
+describe('d1Cache', () => {
+  test('returns an object with get and set', () => {
+    const fakeDB = {} as any;
+    const cache = d1Cache(fakeDB);
+    expect(cache).toHaveProperty('get');
+    expect(cache).toHaveProperty('set');
   });
 });

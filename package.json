@@ -11,9 +11,8 @@
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
-    "pretest": "npm run build",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test": "jest --runInBand --no-cache",
+    "test:coverage": "jest --coverage --runInBand --no-cache",
     "typecheck": "tsc --noEmit",
     "docs": "typedoc",
     "update-bootstraps": "npm run build && node dist/cli.js update-bootstraps"
@@ -34,10 +33,11 @@
   "unpkg": "dist/browser/index.global.js",
   "jsdelivr": "dist/browser/index.global.js",
   "dependencies": {
+    "@iocium/cachekit": "^1.1.0",
+    "ajv": "^8.17.1",
     "commander": "^14.0.0",
     "ipaddr.js": "^2.0.0",
-    "validator": "^13.11.0",
-    "@iocium/cachekit": "^1.1.0"
+    "validator": "^13.11.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

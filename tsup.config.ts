@@ -9,10 +9,13 @@ const nodeConfig = defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  dts: true,
+  // Disable declaration generation to avoid missing types for external modules
+  dts: false,
   shims: false,
   minify: true,
   banner: { js: '' },
+  // Do not bundle ajv, leave as external dependency
+  external: ['ajv'],
 });
 
 // Browser build: single IIFE bundle for direct <script> usage
