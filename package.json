@@ -1,6 +1,6 @@
 {
   "name": "@iocium/rdap-lite",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Lightweight RDAP client with normalized output, caching, CLI, and browser compatibility.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
