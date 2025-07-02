@@ -1,6 +1,12 @@
 # @iocium/rdap-lite
 
-[![npm version](https://img.shields.io/npm/v/@iocium/rdap-lite.svg)](https://www.npmjs.com/package/@iocium/rdap-lite) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@iocium/rdap-lite)](https://www.npmjs.com/package/@iocium/rdap-lite)
+[![build](https://github.com/iocium/favicon-fetcher/actions/workflows/test.yml/badge.svg)](https://github.com/iocium/rdap-lite/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/iocium/favicon-fetcher/branch/main/graph/badge.svg)](https://codecov.io/gh/iocium/rdap-lite)
+[![npm downloads](https://img.shields.io/npm/dm/@iocium/rdap-lite)](https://www.npmjs.com/package/@iocium/rdap-lite)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@iocium/rdap-lite)](https://bundlephobia.com/package/@iocium/rdap-lite)
+[![types](https://img.shields.io/npm/types/@iocium/rdap-lite)](https://www.npmjs.com/package/@iocium/rdap-lite)
+[![license](https://img.shields.io/npm/l/@iocium/rdap-lite)](https://github.com/iocium/rdap-lite/blob/main/LICENSE)
 
 > **Lightweight RDAP client** for domain and IP lookups with normalized JSON output, built-in caching, and a user-friendly CLI. Works seamlessly in Node.js, browsers, and serverless environments.
 
